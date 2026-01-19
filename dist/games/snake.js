@@ -1,5 +1,3 @@
-// Ok, try replacing your existing snake.js with this:
-
 export class SnakeGame {
     constructor(canvas) {
         this.canvas = canvas;
@@ -13,9 +11,12 @@ export class SnakeGame {
         this.nextDirection = {x: 1, y: 0};
         this.food = this.spawnFood();
         this.score = 0;
+        this.highScore = parseInt(localStorage.getItem('snakeHighScore') || '0');
+        this.foodEaten = 0;
         this.gameOver = false;
         this.speed = 100; // ms per move
         this.lastMoveTime = 0;
+        this.startTime = Date.now();
         
         this.boundKeyDown = this.handleKeyDown.bind(this);
         document.addEventListener('keydown', this.boundKeyDown);
@@ -76,8 +77,18 @@ export class SnakeGame {
         this.nextDirection = {x: 1, y: 0};
         this.food = this.spawnFood();
         this.score = 0;
+        this.foodEaten = 0;
         this.gameOver = false;
+        this.speed = 100;
         this.lastMoveTime = performance.now();
+        this.startTime = Date.now();
+    }
+    
+    getElapsedTime() {
+        const seconds = Math.floor((Date.now() - this.startTime) / 1000);
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
     }
     
     update(time) {
@@ -86,39 +97,44 @@ export class SnakeGame {
         if (time - this.lastMoveTime < this.speed) return;
         this.lastMoveTime = time;
         
-        // Update direction
         this.direction = this.nextDirection;
         
-        // Calculate new head position
         const head = {
             x: this.snake[0].x + this.direction.x,
             y: this.snake[0].y + this.direction.y
         };
         
-        // Check wall collision
+        // Wall collision
         if (head.x < 0 || head.x >= this.tileCount || head.y < 0 || head.y >= this.tileCount) {
             this.gameOver = true;
+            this.updateHighScore();
             return;
         }
         
-        // Check self collision
+        // Self collision
         if (this.snake.some(segment => segment.x === head.x && segment.y === head.y)) {
             this.gameOver = true;
+            this.updateHighScore();
             return;
         }
         
-        // Add new head
         this.snake.unshift(head);
         
-        // Check food collision
+        // Food collision
         if (head.x === this.food.x && head.y === this.food.y) {
+            this.foodEaten++;
             this.score += 10;
             this.food = this.spawnFood();
-            // Speed up slightly
-            this.speed = Math.max(50, this.speed - 1);
+            this.speed = Math.max(50, this.speed - 1); // Speed up
         } else {
-            // Remove tail if no food eaten
             this.snake.pop();
+        }
+    }
+    
+    updateHighScore() {
+        if (this.score > this.highScore) {
+            this.highScore = this.score;
+            localStorage.setItem('snakeHighScore', this.score.toString());
         }
     }
     
@@ -145,11 +161,9 @@ export class SnakeGame {
         // Draw snake
         this.snake.forEach((segment, index) => {
             if (index === 0) {
-                // Head - brighter gold
-                this.ctx.fillStyle = '#f0c959';
+                this.ctx.fillStyle = '#f0c959'; // Head - bright gold
             } else {
-                // Body - darker gold
-                this.ctx.fillStyle = '#d4af37';
+                this.ctx.fillStyle = '#d4af37'; // Body - default gold
             }
             this.ctx.fillRect(
                 segment.x * this.tileSize + 1,
@@ -159,7 +173,7 @@ export class SnakeGame {
             );
         });
         
-        // Draw food
+        // Draw food (red circle)
         this.ctx.fillStyle = '#F00000';
         this.ctx.beginPath();
         this.ctx.arc(
@@ -171,12 +185,10 @@ export class SnakeGame {
         );
         this.ctx.fill();
         
-        // Draw score
-        this.ctx.fillStyle = '#d4af37';
-        this.ctx.font = '24px system-ui';
-        this.ctx.fillText(`Score: ${this.score}`, 10, 30);
-        this.ctx.fillText(`Length: ${this.snake.length}`, 10, 60);
+        // Draw scoreboard panel
+        this.drawScoreboard();
         
+        // Game over screen
         if (this.gameOver) {
             this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             this.ctx.fillRect(0, this.canvas.height / 2 - 40, this.canvas.width, 80);
@@ -188,6 +200,46 @@ export class SnakeGame {
             this.ctx.fillText('Press R to restart', this.canvas.width / 2, this.canvas.height / 2 + 30);
             this.ctx.textAlign = 'left';
         }
+    }
+    
+    drawScoreboard() {
+        // Scoreboard background panel
+        const panelWidth = 200;
+        const panelHeight = 140;
+        const padding = 10;
+        
+        this.ctx.fillStyle = 'rgba(26, 48, 9, 0.9)';
+        this.ctx.fillRect(padding, padding, panelWidth, panelHeight);
+        
+        // Border
+        this.ctx.strokeStyle = '#d4af37';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(padding, padding, panelWidth, panelHeight);
+        
+        // Text styling
+        this.ctx.fillStyle = '#d4af37';
+        this.ctx.font = 'bold 20px system-ui';
+        this.ctx.textAlign = 'left';
+        
+        let y = padding + 30;
+        const lineHeight = 28;
+        
+        // Score
+        this.ctx.fillText(`Score: ${this.score}`, padding + 10, y);
+        y += lineHeight;
+        
+        // High score
+        this.ctx.fillStyle = this.score === this.highScore && this.score > 0 ? '#f0c959' : '#d4af37';
+        this.ctx.fillText(`High: ${this.highScore}`, padding + 10, y);
+        y += lineHeight;
+        
+        // Length
+        this.ctx.fillStyle = '#d4af37';
+        this.ctx.fillText(`Length: ${this.snake.length}`, padding + 10, y);
+        y += lineHeight;
+        
+        // Time
+        this.ctx.fillText(`Time: ${this.getElapsedTime()}`, padding + 10, y);
     }
     
     gameLoop(time = 0) {
