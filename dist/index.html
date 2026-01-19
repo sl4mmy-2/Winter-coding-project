@@ -101,7 +101,7 @@
 <script>
                 let activeGame = null;
 
-                function loadGame(gameName) {
+                async function loadGame(gameName) {
                     // Destroy active game
                     if (activeGame && activeGame.destroy) {
                         activeGame.destroy();
