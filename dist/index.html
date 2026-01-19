@@ -89,7 +89,8 @@
    </head>
    <body>
      <div class="button-bar">
-<button onclick="loadGame('blocks')" class="game-button active">Blocks</button><button onclick="loadGame('snake')" class="game-button">Snake</button>
+         <button onclick="loadGame('blocks', this)" class="game-button active">Blocks</button>
+         <button onclick="loadGame('snake', this)" class="game-button">Snake</button>
      </div>
      <div class="canvas-container">
 <canvas width="800" height="600" id="game-canvas"></canvas>
@@ -101,7 +102,7 @@
 <script>
                 let activeGame = null;
 
-                async function loadGame(gameName) {
+                async function loadGame(gameName, gameButton) {
                     // Destroy active game
                     if (activeGame && activeGame.destroy) {
                         activeGame.destroy();
@@ -111,7 +112,9 @@
                     document.querySelectorAll('.game-button').forEach(btn => {
                         btn.classList.remove('active');
                     });
-                    event.target.classList.add('active');
+                    if (gameButton) {
+                        gameButton.classList.add('active');
+                    }
 
                     // Load new game
                     const canvas = document.getElementById('game-canvas');
@@ -143,7 +146,9 @@
                 resizeCanvas();
 
                 window.addEventListener('load', () => {
-                    loadGame('blocks');
+                    const blocksButton = document.querySelector('.game-button');
+
+                    loadGame('blocks', blocksButton);
                 });
             </script>
    </body>
