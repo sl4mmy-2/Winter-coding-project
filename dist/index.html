@@ -89,25 +89,35 @@
    </head>
    <body>
      <div class="button-bar">
-<button onclick="loadGame('blocks')" class="game-button active">Blocks</button><button onclick="loadGame('snake')" class="game-button">Snake</button>     </div>
+<button onclick="loadGame('blocks')" class="game-button active">Blocks</button><button onclick="loadGame('snake')" class="game-button">Snake</button>
+     </div>
      <div class="canvas-container">
-<canvas width="800" height="600" id="game-canvas"></canvas>     </div>
+<canvas width="800" height="600" id="game-canvas"></canvas>
+     </div>
      <div class="footer">
        <p>Henry S.</p>
        <p>Copyright (c) 2026</p>
      </div>
 <script>
+                let activeGame = null;
+
                 function loadGame(gameName) {
+                    // Destroy active game
+                    if (activeGame && activeGame.destroy) {
+                        activeGame.destroy();
+                    }
+
                     // Update active button
                     document.querySelectorAll('.game-button').forEach(btn => {
                         btn.classList.remove('active');
                     });
                     event.target.classList.add('active');
 
-                    // Load game module (to be implemented)
-                    console.log('Loading game:', gameName);
-
-                    // Future: import(`/games/${gameName}.js`).then(game => game.init());
+                    // Load new game
+                    const canvas = document.getElementById('game-canvas');
+                    const module = await import(`/games/${gameName}.js`);
+                    activeGame = module.init(canvas);
+                    activeGame.init();
                 }
 
                 // Responsive canvas sizing
@@ -128,9 +138,13 @@
                     canvas.style.width = width + 'px';
                     canvas.style.height = height + 'px';
                 }
-
+   
                 window.addEventListener('resize', resizeCanvas);
                 resizeCanvas();
+
+                window.addEventListener('load', () => {
+                    loadGame('blocks');
+                });
             </script>
    </body>
 </html>
